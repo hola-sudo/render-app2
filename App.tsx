@@ -415,23 +415,18 @@ const App: React.FC = () => {
                   onChange={handleSceneDescriptionChange}
                   rows={10}
                   className="w-full p-3 rounded-lg bg-indigo-900 border border-indigo-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition duration-200 resize-y"
-                  placeholder="EJEMPLO (formato técnico estricto, 1:1 con SketchUp en geometría, posición, presencia de objetos y cámara):
-*   Cámara: Perspectiva fija, punto de vista ligeramente bajo y central, encuadre cerrado.
-*   Suelo: Plano horizontal, mármol blanco con veteado gris.
-*   Paredes: Planos verticales, yeso blanco liso.
-*   Ventanas: Dos rectángulos con marcos negros, cristal transparente.
-*   Techo: No visible.
-*   Sillas (primer plano): 4 sillas Chivari, metal dorado pulido, cojines de terciopelo blanco.
-*   Mesa (primer plano): NINGUNA. Mantener vacío.
-*   Mesa (fondo): 1 mesa rectangular, superficie de mármol blanco con base cilíndrica dorada.
-*   Platos: Redondos, porcelana blanca con borde dorado.
-*   Cubiertos: Tenedor, cuchillo, metal dorado pulido.
-*   Copas: Dos por puesto, cristal transparente, tallo fino.
-*   Servilletas: Lino marfil, doblado en forma de moño, con anillo dorado liso.
-*   Arreglos florales (mesa de fondo): Rosas blancas y rojas, peonías blush, eucalipto, en florero de cristal cilíndrico.
-*   Velas (mesa de fondo): 3 velas cilíndricas encendidas, en soportes de cristal.
-*   Fondo (detrás de la mesa): Paneles de madera clara.
-*   Fondo distante (a través de ventanas): Jardín verde difuminado."
+                  placeholder="EJEMPLO (formato técnico estricto):
+1. CAMARA: Ángulo frontal, altura media.
+2. ZONAS VACÍAS (NO TOCAR):
+   * Primer plano derecho: Pasto vacío.
+   * Centro: Pasillo despejado.
+3. GEOMETRÍA EXISTENTE:
+   * Mesa redonda central -> Superficie de mármol blanco, base metálica dorada.
+   * Sillas alrededor de la mesa -> Sillas Chiavari doradas, cojines de terciopelo verde.
+   * Arreglo floral sobre mesa -> Rosas blancas y hortensias, florero de cristal transparente.
+   * Suelo: Pasto natural. ZONA RESTRINGIDA: NO COLOCAR MUEBLES AQUÍ.
+   * Fondo: Pared de ladrillo expuesto.
+   * Iluminación del boceto: Luz plana de día."
                 ></textarea>
               </div>
             )}

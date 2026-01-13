@@ -92,26 +92,24 @@ export const detectSceneElements = async (originalImages: File[]): Promise<strin
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
   const imageParts = await Promise.all(originalImages.map(file => fileToPart(file)));
 
-  const prompt = `Eres un Analista de Geometría 3D. Tu tarea es describir la imagen de SketchUp para un motor de renderizado.
+  const prompt = `Eres un Inspector Técnico de Geometría 3D. Tu misión es mapear la escena para un renderizado estricto.
   
-  Analiza la imagen y genera una lista estricta de asignación de materiales. NO describas la "atmósfera", describe la GEOMETRÍA y qué material debe aplicarse a ella.
+  ANALIZA LA IMAGEN Y GENERA UN REPORTE TÉCNICO.
+  
+  CRÍTICO: Debes identificar explícitamente las "ZONAS MUERTAS" (áreas vacías donde solo hay suelo/pasto/pared).
   
   Usa este formato estricto:
-  * [Objeto/Geometría detectada] -> [Material Fotorrealista a aplicar]
   
-  Ejemplo:
-  * Plano horizontal inferior -> Suelo de mármol blanco con veteado gris.
-  * Prismas rectangulares verticales (fondo) -> Paneles de madera de roble claro.
-  * Cilindros sobre las mesas -> Velas de cera blanca.
-  * Superficies planas de las mesas -> Mantel de lino marfil con textura visible.
+  1. CAMARA: [Describe ángulo y altura]
+  2. ZONAS VACÍAS (NO TOCAR): [Lista las áreas que NO tienen muebles. Ej: "Primer plano derecho: Pasto vacío", "Centro: Pasillo despejado"]
+  3. GEOMETRÍA EXISTENTE:
+     * [Objeto] -> [Material]
+     * [Objeto] -> [Material]
   
-  Describe:
-  1. La Cámara (perspectiva exacta).
-  2. Materiales para Arquitectura (Suelo, Paredes, Ventanas).
-  3. Materiales para Mobiliario (Sillas, Mesas).
-  4. Materiales para Decoración (Flores, Vajilla, Velas).
-  
-  Sé extremadamente literal. Si una zona está vacía, di "Zona vacía: mantener como espacio negativo/aire".
+  Reglas:
+  - Si ves pasto vacío, escribe: "Suelo: Pasto natural. ZONA RESTRINGIDA: NO COLOCAR MUEBLES AQUÍ."
+  - Describe la iluminación actual del boceto (ej: "Boceto con luz plana de día") para saber qué debemos cambiar.
+  - Sé literal con los objetos. Si ves cilindros blancos, son "Cilindros de cera", no inventes que tienen flores si no las tienen.
   `;
 
   try {
@@ -154,21 +152,23 @@ export const refinePromptForGeneration = async (
   lightingType: LightingType,
   advancedLightingInstructions: string,
   colorTemperature: 'warm' | 'neutral' | 'cool' | 'golden',
+  // FIX: Updated exposureCompensation type to include 'very_dark'
   exposureCompensation: 'standard' | 'brighter' | 'darker' | 'very_bright' | 'very_dark',
   contrastEnhancement: 'natural' | 'enhanced' | 'soft' | 'high_contrast' | 'low_contrast',
   hasReferenceImages: boolean = false
 ): Promise<string> => {
-  // Lighting configuration based on selection
+  // 1. Lógica de Iluminación FORZADA (Override)
   let lightingDetails = '';
+  // Nota: Agregamos "Overwriting input colors" para forzar el cambio de día a noche
   switch (lightingType) {
     case LightingType.Day:
-      lightingDetails = "Iluminación: Luz diurna brillante y suave, natural. Atmósfera aireada con exposición uniforme, sombras naturales realistas y sutiles. Sin focos duros ni efectos de lente fotográficos artificiales (por ejemplo, destellos, brillos o halos exagerados).";
+      lightingDetails = "TIME: DAYTIME. Lighting: Natural sunlight, bright, airy. Shadows: Sharp and realistic.";
       break;
     case LightingType.Sunset:
-      lightingDetails = "Iluminación: Luz cálida y dorada de atardecer. Ambiente mágico y etéreo con sombras alargadas y colores ricos. La luz debe ser suave y direccional, sin destellos o halos artificiales que no sean físicamente realistas de la hora dorada.";
+      lightingDetails = "TIME: GOLDEN HOUR. Lighting: Warm, directional low sun. Atmosphere: Romantic, glowing.";
       break;
     case LightingType.Night:
-      lightingDetails = "Iluminación: Ambiente nocturno íntimo. Fuentes de luz primaria como velas o luces de cadena con un brillo cálido, suave y difuso, realistas. La luz ambiental debe ser dorada o tenue, sin efectos de lente fotográficos exagerados (por ejemplo, destellos, brillos o halos artificiales). Las llamas de las velas deben emitir un brillo suave y realista sin destellos de lente exagerados. El fondo debe estar sutilmente atenuado para enfatizar las mesas y el primer plano.";
+      lightingDetails = "TIME: NIGHT. CRITICAL: IGNORE THE BRIGHTNESS OF THE INPUT IMAGE. The scene must be DARK. Sky: Pitch black or deep midnight blue. Lighting sources: ONLY from the candles and specific lights shown. The grass and trees must be dark/shadowed, NOT bright green.";
       break;
   }
 
@@ -181,7 +181,7 @@ export const refinePromptForGeneration = async (
     case 'golden': advancedLightingCommand += "La temperatura de color general es dorada y muy cálida, como la luz del sol al atardecer, creando un brillo etéreo. "; break;
   }
   switch (exposureCompensation) {
-    case 'standard': advancedLightingCommand += "La exposición es estándar y bien equilibrada. "; break;
+    case 'standard': advancedLightingCommand += "La imagen tiene una exposición estándar y bien equilibrada. "; break;
     case 'brighter': advancedLightingCommand += "La imagen tiene una exposición ligeramente más brillante, con un ambiente más luminoso. "; break;
     case 'darker': advancedLightingCommand += "La imagen tiene una exposición ligeramente más oscura, con un un ambiente más dramático o íntimo. "; break;
     case 'very_bright': advancedLightingCommand += "La imagen tiene una exposición muy brillante, con zonas luminosas que pueden tener un ligero bloom. "; break;
@@ -201,40 +201,36 @@ export const refinePromptForGeneration = async (
   }
 
 
+  // 2. Instrucción sobre Referencias (Más estricta)
   const referenceImageInstruction = hasReferenceImages
-    ? `NOTA SOBRE REFERENCIAS: Usa las imágenes de referencia SOLAMENTE para copiar el 'Color', 'Textura' y 'Material'. IGNORA COMPLETAMENTE la forma, geometría o perspectiva de las imágenes de referencia. La forma la dicta ÚNICAMENTE la imagen de SketchUp.`
+    ? `REFERENCE IMAGES RULE: Use the attached images ONLY for 'Material Texture' (e.g., how the flowers look, texture of the cloth). DO NOT COPY THE OBJECTS. If the reference shows a table but the SketchUp shows empty grass, KEEP THE GRASS EMPTY.`
     : '';
 
-  // Combine all inputs into a comprehensive prompt for the prompt refinement model
+  // 3. El Prompt Maestro (Reingeniería total)
   const refinementPrompt = `
-  ACTÚA COMO: Un Motor de Renderizado PBR (Physically Based Rendering) Técnico y Estricto, NO como un diseñador creativo.
-  
-  TAREA: Tu ÚNICA función es realizar un "Texture Mapping" (Mapeado de Texturas) y "Lighting Pass" (Pase de Iluminación) sobre la geometría EXACTA de la imagen de entrada (SketchUp).
+  SYSTEM ROLE: You are a strict 3D Rendering Engine (IMG2IMG). You are NOT a creative designer. You function like a "Texture Applicator".
 
-  INPUT:
-  1. Una imagen de SketchUp (que actúa como "Geometry Pass" o "Depth Map" inmutable).
-  2. Instrucciones de materiales (descripción).
-  3. Imágenes de referencia (SOLO para extraer texturas/materiales, IGNORAR su geometría).
+  INPUT DATA:
+  1. **Geometry Source:** The SketchUp image provided. This is the ABSOLUTE TRUTH for object placement.
+  2. **Material Data:** ${sceneElementsDescription}
+  3. **Atmosphere:** ${lightingDetails} ${advancedLightingCommand}
 
-  REGLAS DE ORO (VIOLARLAS CAUSA FALLO DEL SISTEMA):
-  1. **CONGELAMIENTO DE CÁMARA:** La imagen de salida debe superponerse perfectamente píxel a píxel con la entrada. NO muevas la cámara, NO cambies el FOV, NO cambies el encuadre. La perspectiva es SAGRADA.
-  2. **CONGELAMIENTO DE GEOMETRÍA:** NO añadas objetos. NO quites objetos. NO arregles modelados "feos". Si el modelo de SketchUp es un cubo simple, renderiza un cubo fotorrealista, no lo transformes en una mesa compleja. Respeta las líneas rectas y la perspectiva cónica del dibujo original.
-  3. **INFERENCIA DE TEXTURAS:** Aplica materiales fotorrealistas sobre las superficies definidas por las líneas del dibujo.
-     - Si ves líneas de un piso -> Aplica textura de mármol/madera respetando la perspectiva.
-     - Si ves un cilindro -> Aplica textura de vidrio/metal/cera.
-  4. **PROHIBIDO ALUCINAR:** No inventes ventanas, puertas, o muebles que no estén dibujados explícitamente en el SketchUp.
+  ⛔️ NEGATIVE CONSTRAINTS (THINGS YOU MUST NOT DO):
+  - **NO HALLUCINATIONS:** DO NOT add tables, chairs, or furniture in empty spaces. If the input shows empty grass in the foreground, the output MUST show empty grass.
+  - **NO GEOMETRY CHANGES:** Do not move the camera. Do not rotate objects.
+  - **NO DAYLIGHT LEAK:** If the mode is NIGHT, the input image's bright colors must be darkened to match a night environment.
 
-  ESTILO VISUAL: Fotografía de evento de alta gama, Award-Winning Photography, 8K resolution, Unreal Engine 5 render style.
+  ✅ EXECUTION INSTRUCTIONS:
+  1. **Detect Negative Space:** Look at the SketchUp image. Identify areas devoid of furniture (grass, floor). Render these as high-quality textures (e.g., realistic grass) but KEEP THEM EMPTY.
+  2. **Apply Materials:** Paint over the existing blocks with photorealistic materials (PBR).
+     - White Cylinders -> Realistic Wax Candles with subsurface scattering.
+     - Green Blobs -> Realistic leafy bushes/flowers.
+     - Grey/White Planes -> Tablecloths or marble.
+  3. **Lighting Pass:** Apply the requested lighting (${lightingType}) strictly. If Night, darken the environment heavily.
 
-  INSTRUCCIONES DE ILUMINACIÓN:
-  ${lightingDetails} ${advancedLightingCommand}
+  FINAL OUTPUT GOAL: A photorealistic version of the EXACT SAME scene composition. The viewer should think "This is the same photo, just rendered."
 
-  DESCRIPCIÓN DE MATERIALES A APLICAR (Aplica esto a la geometría existente):
-  ${sceneElementsDescription}
-
-  ${referenceImageInstruction}
-
-  Genera el prompt final optimizado para que el modelo de imagen ejecute este renderizado técnico sin desviarse un solo píxel de la estructura original.
+  Generate the final detailed prompt now.
   `;
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
@@ -315,6 +311,7 @@ export const generateSingleRender = async (
   lightingType: LightingType,
   advancedLightingInstructions: string,
   colorTemperature: 'warm' | 'neutral' | 'cool' | 'golden',
+  // FIX: Updated exposureCompensation type to include 'very_dark'
   exposureCompensation: 'standard' | 'brighter' | 'darker' | 'very_bright' | 'very_dark',
   contrastEnhancement: 'natural' | 'enhanced' | 'soft' | 'high_contrast' | 'low_contrast',
   onProgress: (message: string) => void // Simplified progress callback
@@ -340,7 +337,7 @@ export const generateSingleRender = async (
     console.log(`Final Prompt for the Scene:`, finalPrompt); // Log the final prompt for debugging
 
     // Add technical prefix before sending to image generation
-    const technicalPrefix = "High fidelity image-to-image transformation. Keep input strict geometry. ";
+    const technicalPrefix = "STRICT IMG2IMG RENDER. DO NOT ADD OBJECTS. PRESERVE EMPTY SPACES. ";
     const combinedPrompt = technicalPrefix + finalPrompt;
 
     onProgress(`Generando render para la escena...`);
