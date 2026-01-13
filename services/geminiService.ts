@@ -152,7 +152,6 @@ export const refinePromptForGeneration = async (
   lightingType: LightingType,
   advancedLightingInstructions: string,
   colorTemperature: 'warm' | 'neutral' | 'cool' | 'golden',
-  // FIX: Updated exposureCompensation type to include 'very_dark'
   exposureCompensation: 'standard' | 'brighter' | 'darker' | 'very_bright' | 'very_dark',
   contrastEnhancement: 'natural' | 'enhanced' | 'soft' | 'high_contrast' | 'low_contrast',
   hasReferenceImages: boolean = false
@@ -278,7 +277,7 @@ const generateEventRender = async (
       model: 'gemini-3-pro-image-preview', // Pro image model for high-quality final render
       contents: { parts: [originalImagePart, ...referenceImageParts, textPart] }, // Include all parts
       config: {
-        responseModalities: [Modality.IMAGE, Modality.TEXT],
+        responseModalities: [Modality.IMAGE], // Only request image modality
         safetySettings,
       },
     });
@@ -311,7 +310,6 @@ export const generateSingleRender = async (
   lightingType: LightingType,
   advancedLightingInstructions: string,
   colorTemperature: 'warm' | 'neutral' | 'cool' | 'golden',
-  // FIX: Updated exposureCompensation type to include 'very_dark'
   exposureCompensation: 'standard' | 'brighter' | 'darker' | 'very_bright' | 'very_dark',
   contrastEnhancement: 'natural' | 'enhanced' | 'soft' | 'high_contrast' | 'low_contrast',
   onProgress: (message: string) => void // Simplified progress callback
@@ -336,9 +334,10 @@ export const generateSingleRender = async (
     );
     console.log(`Final Prompt for the Scene:`, finalPrompt); // Log the final prompt for debugging
 
-    // Add technical prefix before sending to image generation
-    const technicalPrefix = "STRICT IMG2IMG RENDER. DO NOT ADD OBJECTS. PRESERVE EMPTY SPACES. ";
-    const combinedPrompt = technicalPrefix + finalPrompt;
+    // PREFIJO TÉCNICO DE BLOQUEO ("The Lock")
+    // Este string se concatena al final para asegurar que sea la última instrucción que lee el modelo
+    const strictLock = " [IMPORTANT: EXACT GEOMETRY MATCH. NO CAMERA MOVEMENT. SAME CROP. NO ZOOM.]";
+    const combinedPrompt = finalPrompt + strictLock;
 
     onProgress(`Generando render para la escena...`);
     const imageUrl = await generateEventRender(
