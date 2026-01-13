@@ -415,20 +415,23 @@ const App: React.FC = () => {
                   onChange={handleSceneDescriptionChange}
                   rows={10}
                   className="w-full p-3 rounded-lg bg-indigo-900 border border-indigo-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition duration-200 resize-y"
-                  placeholder="EJEMPLO (formato técnico, SIN NINGUNA INVENCION, 1:1 con SketchUp en geometría, posición, presencia de objetos Y CÁMARA):
-Descripción técnica de la escena (1:1 SketchUp):
-*   Cámara y Vista (1:1 SketchUp): Cámara fija, punto de vista ligeramente bajo y central, encuadre cerrado mostrando la mesa principal y parte del fondo. La vista es una toma directa del diseño sin alteración.
-*   Estilo General del Evento: Boda clásica, elegante.
-*   Elementos Arquitectónicos Visibles: Paredes lisas blancas. Suelo: superficie plana, blanca, sin textura. Ventanas: rectangulares con marcos negros, acristalamiento gris oscuro. Techo: No visible.
-*   Mobiliario - Sillas: 20 sillas tipo Chivari. Material: metal dorado pulido. Cojines: rectangulares, tela de terciopelo blanco.
-*   Mobiliario - Mesas: 2 mesas largas rectangulares. Superficie: losa de mármol blanco con veteado gris sutil. Base: pedestales cilíndricos, metal dorado mate. Mesas adicionales: Ausentes.
-*   Vajilla (platos, cubiertos, copas): Platos base: redondos, porcelana blanca con borde de cuentas doradas EXACTO (según geometría visible). Cubiertos: tenedor, cuchillo. Material: metal dorado ALTAMENTE PULIDO, BRILLANTE Y CON EFECTO ESPEJO. Copas: dos por puesto, cristal transparente, tallo fino, forma EXACTA (según geometría visible).
-*   Servilletas: Material: lino. Color: marfil. Doblado: forma de moño EXACTA (según geometría visible). Accesorios: anillo dorado liso.
-*   Arreglos Florales: Disposición: central en mesas. Flores principales: Rosas (blancas, rojas), peonías (blush), eucalipto. ROSAS ESPECÍFICAS sobre el arreglo floral principal, en la posición exacta (según SketchUp). Contenedores: floreros de cristal cilíndricos.
-*   Decoración Específica: Velas: cilíndricas de cera blanca encendidas, en soportes de cristal cilíndricos. Pista de baile: cuadrada, superficie de madera clara con patrón geométrico sutil.
-*   Fondo Inmediato: Paneles de madera clara detrás de la mesa principal.
-*   Fondo Distante: Jardín verde visible a través de ventanas.
-*   Materiales Clave para Renderizado: Mármol blanco, metal dorado, terciopelo blanco, lino marfil, cristal, pétalos de rosa, madera clara."
+                  placeholder="EJEMPLO (formato técnico estricto, 1:1 con SketchUp en geometría, posición, presencia de objetos y cámara):
+*   Cámara: Perspectiva fija, punto de vista ligeramente bajo y central, encuadre cerrado.
+*   Suelo: Plano horizontal, mármol blanco con veteado gris.
+*   Paredes: Planos verticales, yeso blanco liso.
+*   Ventanas: Dos rectángulos con marcos negros, cristal transparente.
+*   Techo: No visible.
+*   Sillas (primer plano): 4 sillas Chivari, metal dorado pulido, cojines de terciopelo blanco.
+*   Mesa (primer plano): NINGUNA. Mantener vacío.
+*   Mesa (fondo): 1 mesa rectangular, superficie de mármol blanco con base cilíndrica dorada.
+*   Platos: Redondos, porcelana blanca con borde dorado.
+*   Cubiertos: Tenedor, cuchillo, metal dorado pulido.
+*   Copas: Dos por puesto, cristal transparente, tallo fino.
+*   Servilletas: Lino marfil, doblado en forma de moño, con anillo dorado liso.
+*   Arreglos florales (mesa de fondo): Rosas blancas y rojas, peonías blush, eucalipto, en florero de cristal cilíndrico.
+*   Velas (mesa de fondo): 3 velas cilíndricas encendidas, en soportes de cristal.
+*   Fondo (detrás de la mesa): Paneles de madera clara.
+*   Fondo distante (a través de ventanas): Jardín verde difuminado."
                 ></textarea>
               </div>
             )}

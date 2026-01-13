@@ -5,22 +5,18 @@ import { LightingType, ImagePart } from '../types';
 const safetySettings: SafetySetting[] = [
   {
     category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    // Fix: Changed HarmBlockBlockThreshold back to HarmBlockThreshold
     threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
   },
   {
     category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    // Fix: Changed HarmBlockBlockThreshold back to HarmBlockThreshold
     threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
   },
   {
     category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    // Fix: Changed HarmBlockBlockThreshold back to HarmBlockThreshold
     threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
   },
   {
     category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-    // Fix: Changed HarmBlockBlockThreshold back to HarmBlockThreshold
     threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
   },
 ];
@@ -96,32 +92,26 @@ export const detectSceneElements = async (originalImages: File[]): Promise<strin
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
   const imageParts = await Promise.all(originalImages.map(file => fileToPart(file)));
 
-  const prompt = `Eres una IA de análisis visual técnico. Tu única tarea es generar una descripción **concisa, factual y LITERALMENTE 1:1** de la imagen de SketchUp proporcionada.
-
-  **DIRECTIVAS CLAVE:**
-  1.  **CÁMARA INVARIABLE Y VISTA 1:1 (PRIORIDAD MÁXIMA):** Describe la **perspectiva de la cámara, el ángulo de visión, el campo de visión y los límites del encuadre EXACTAMENTE** como se presenta en SketchUp. Este es un dato fijo. El render final DEBE ser la **misma fotografía** en su encuadre, sin la más mínima alteración de la vista.
-  2.  **Describe SOLO lo que ves:** Reporta exactamente los elementos visibles y sus atributos.
-  3.  **Fidelidad Geométrica 1:1:** Respeta las formas, tamaños, colores, patrones y distribución espacial **EXACTAS** de CADA elemento en SketchUp.
-  4.  **No Inventes/No Alteres:** NO añadas, elimines, modifiques o inventes ninguna geometría, objeto o detalle que no esté explícitamente en SketchUp.
-  5.  **Espacios Vacíos:** Si un área está vacía o con una textura básica (ej. un plano blanco liso), descríbela **literalmente** como tal ("espacio vacío", "fondo blanco liso", "superficie sin textura").
-  6.  **Iluminación Excluida:** NO incluyas detalles de iluminación.
-
-  Genera una **descripción estructurada con viñetas** capturando los atributos físicos exactos. Sé **específico pero conciso** en materiales, patrones, colores (nombrando matices), acabados, tipos de objetos y su disposición. Si un elemento no es visible o no existe, menciónalo explícitamente (ej. "Techo: No visible.", "Mesas adicionales: Ausentes.").
-
-  *   **Cámara y Vista (1:1 SketchUp):** [Describe el punto de vista, ángulo y encuadre exactos. Ej: "Cámara fija, punto de vista bajo y central, encuadre cerrado mostrando la mesa principal y parte del fondo." o "Vista frontal a la altura de los ojos, ligeramente angulada hacia la derecha, con un amplio campo de visión que captura toda la longitud del salón."]
-  *   **Estilo General del Evento:** [Descripción concisa, si es inferible del diseño.]
-  *   **Elementos Arquitectónicos Visibles:** [Paredes, suelo (describir si es liso/básico), ventanas, techo (indicar si no visible). Describir formas y colores.]
-  *   **Mobiliario - Sillas:** [Cantidad si es clara, tipo, material, color, cojines (si presentes).]
-  *   **Mobiliario - Mesas:** [Cantidad si es clara, tipo, superficie (describir mármol con veteado si aplica, o color liso), base. Indicar explícitamente si NO hay mesas en primer plano.]
-  *   **Vajilla (platos, cubiertos, copas):** [Descripción EXACTA de formas, materiales (ej. porcelana, metal), colores, patrones (ej. borde de cuentas doradas), según la geometría de SketchUp.]
-  *   **Servilletas:** [Material, color, FORMA DE DOBLADO EXACTA según SketchUp, accesorios (ej. anillo dorado liso).]
-  *   **Arreglos Florales:** [Disposición (ej. central, dispersa), flores principales (tipos, colores), follaje. Confirmar presencia/ubicación de ROSAS ESPECÍFICAS sobre el arreglo, si son visibles y dónde. Contenedores (tipo, material, color).]
-  *   **Decoración Específica:** [Velas (tipo, soportes), pista de baile (forma, base, patrón), iniciales (material, posición), si son visibles.]
-  *   **Fondo Inmediato (detrás de mesa principal/escenario):** [Elementos (ej. podios, paneles), colores, materiales.]
-  *   **Fondo Distante (a través de ventanas/fondo abierto):** [Paisaje, nivel de detalle (ej. difuminado).]
-  *   **Materiales Clave para Renderizado:** [Lista concisa de materiales principales que se deben aplicar.]
-
-  Tu respuesta DEBE COMENZAR con: "Descripción técnica de la escena (1:1 SketchUp):"
+  const prompt = `Eres un Analista de Geometría 3D. Tu tarea es describir la imagen de SketchUp para un motor de renderizado.
+  
+  Analiza la imagen y genera una lista estricta de asignación de materiales. NO describas la "atmósfera", describe la GEOMETRÍA y qué material debe aplicarse a ella.
+  
+  Usa este formato estricto:
+  * [Objeto/Geometría detectada] -> [Material Fotorrealista a aplicar]
+  
+  Ejemplo:
+  * Plano horizontal inferior -> Suelo de mármol blanco con veteado gris.
+  * Prismas rectangulares verticales (fondo) -> Paneles de madera de roble claro.
+  * Cilindros sobre las mesas -> Velas de cera blanca.
+  * Superficies planas de las mesas -> Mantel de lino marfil con textura visible.
+  
+  Describe:
+  1. La Cámara (perspectiva exacta).
+  2. Materiales para Arquitectura (Suelo, Paredes, Ventanas).
+  3. Materiales para Mobiliario (Sillas, Mesas).
+  4. Materiales para Decoración (Flores, Vajilla, Velas).
+  
+  Sé extremadamente literal. Si una zona está vacía, di "Zona vacía: mantener como espacio negativo/aire".
   `;
 
   try {
@@ -212,40 +202,40 @@ export const refinePromptForGeneration = async (
 
 
   const referenceImageInstruction = hasReferenceImages
-    ? `**DIRECTIVA CRÍTICA: REFERENCIAS VISUALES ANULAN TEXTO EN CONFLICTO** Si se proporcionan imágenes de referencia visuales específicas para elementos (ej. cubiertos, flores, servilletas) junto con este prompt, la IA **DEBE priorizar y replicar los detalles visuales, patrones y texturas EXACTOS de esas imágenes de referencia** sobre cualquier descripción textual conflictiva. Las descripciones textuales sirven como contexto suplementario, pero las referencias visuales son de importancia suprema para la fidelidad.`
+    ? `NOTA SOBRE REFERENCIAS: Usa las imágenes de referencia SOLAMENTE para copiar el 'Color', 'Textura' y 'Material'. IGNORA COMPLETAMENTE la forma, geometría o perspectiva de las imágenes de referencia. La forma la dicta ÚNICAMENTE la imagen de SketchUp.`
     : '';
 
   // Combine all inputs into a comprehensive prompt for the prompt refinement model
-  const refinementPrompt = `Basado en las siguientes entradas de usuario, genera un prompt maestro extremadamente detallado y preciso para un modelo de generación de imágenes de IA (como Gemini 3 Pro Image). El objetivo es producir una Fotografía de Evento Hiper-Fotorrealista y Galardonada a partir de una imagen de entrada tipo SketchUp, adecuada para un portafolio de diseño de alta gama.
+  const refinementPrompt = `
+  ACTÚA COMO: Un Motor de Renderizado PBR (Physically Based Rendering) Técnico y Estricto, NO como un diseñador creativo.
+  
+  TAREA: Tu ÚNICA función es realizar un "Texture Mapping" (Mapeado de Texturas) y "Lighting Pass" (Pase de Iluminación) sobre la geometría EXACTA de la imagen de entrada (SketchUp).
 
-  **Instrucciones para el Prompt Maestro:**
-  - **Comienza con la Directiva Central:** "Eres una IA experta especializada en Diseño de Eventos de Lujo y Visualización de Bodas. Tu tarea es transformar una captura de pantalla de un modelo 3D en bruto (SketchUp) en una Fotografía de Evento Hiper-Fotorrealista y Galardonada, adecuada para un portafolio de diseño de alta gama."
-  - ${referenceImageInstruction}
-  - **DIRECTIVA ULTRA-CRÍTICA DE FIDELIDAD 1:1 ABSOLUTA (NO HAY MARGEN PARA ERRORES O INTERPRETACIONES CREATIVAS):**
-    "1. **LA CÁMARA ES SACROSANTA. ENCUADRE, ÁNGULO Y PERSPECTIVA 1:1 SON INMUTABLES.** El render DEBE ser un **CALCO FOTOGRÁFICO EXACTO DEL ENCUADRE, ÁNGULO Y PERSPECTIVA DE LA IMAGEN DE SKETCHUP**. CUALQUIER ALTERACIÓN DE LA CÁMARA ES UN FALLO CRÍTICO. No hay movimiento de cámara, ajuste de lente, cambio de punto de vista ni recomposición. La imagen de SketchUp es el visor literal del render final.
-    2. **LA GEOMETRÍA ES INALTERABLE. COMPOSICIÓN Y POSICIÓN SON FIJAS:** La disposición exacta, posición, escala y número de TODOS los objetos (mesas, sillas, platos, vasos, flores, elementos arquitectónicos, *incluyendo suelo, paredes, y la presencia/ausencia de CUALQUIER objeto*) deben permanecer **PRECISAMENTE** en sus coordenadas de píxeles y dimensiones originales tal como se representa en la imagen de entrada de SketchUp. Esta imagen es un plano 3D rígido e inalterable; **ES ABSOLUTAMENTE IMPERATIVO QUE NO HAYA LA MÁS MÍNIMA DESVIACIÓN EN LA GEOMETRÍA O EN LA DISTRIBUCIÓN DE LOS OBJETOS. LA IA NO TIENE ABSOLUTAMENTE NINGÚN PERMISO PARA INTRODUCIR NUEVOS ELEMENTOS, ELIMINAR OBJETOS EXISTENTES, REDISTRIBUIR OBJETOS, NI ALTERAR LA COMPOSICIÓN ORIGINAL EN LO ABSOLUTO.**
-    3. **¡ALERTA CRÍTICA: NO INVENTES OBJETOS!** Si un objeto NO está en la imagen de SketchUp O la descripción lo declara AUSENTE (ej. 'Mesas adicionales: Ausentes.', 'NO hay mesas en primer plano'), **BAJO NINGUNA CIRCUNSTANCIA DEBES GENERARLO**. Tu única función es realzar lo existente con fotorrealismo, NO crear nuevos elementos para 'llenar' vacíos percibidos.
-    4. **ESPACIOS VACÍOS PERMANECEN VACÍOS (CON FIDELIDAD MATERIAL):** Si la imagen de entrada muestra áreas vacías, sin textura, o con un objeto básico (ej. un cuadrado para una servilleta), estas áreas DEBEN permanecer como tales. NO añadas nuevas paredes, techos, muebles o cualquier elemento arquitectónico no presente explícitamente en la imagen de SketchUp, y **NUNCA inventes objetos o mobiliario para llenar estos espacios, incluso si parecen 'vacíos'.** Trata las superficies sin textura como fondos simples, limpios y consistentemente de tono neutro si lo sugiere el contexto (ej. 'pared lisa con micro-textura de yeso blanco sin patrón'), pero NUNCA inventes patrones o estructuras complejas.
-    5. **SÓLO SUPERPOSICIÓN DE TEXTURA FOTORREALISTA (FIDELIDAD 1:1 DE OBJETO Y FORMA):** Tu ÚNICA función es 'pintar' sobre la geometría existente con texturas y materiales increíblemente realistas, de alta definición, renderizados físicamente (PBR). NO alteres las formas subyacentes, solo sus propiedades de superficie y la interacción con la luz. SI LA IMAGEN DE SKETCHUP ES UN 'MODELO DE CAJA BLANCA' O UN 'LAYOUT BÁSICO' CON ESPACIOS VACÍOS, ASEGÚRATE DE QUE LA IMAGEN FINAL REFLEJE UN ESPACIO ABIERTO, O LAS PAREDES TAL CUAL, SIN AÑADIR NUEVAS PAREDES INNECESARIAS O RELLENAR VACÍOS CON ESTRUCTURAS. **Cada objeto, por pequeño que sea (platos, cubiertos, copas, servilletas, flores específicas), DEBE mantener la forma, tamaño, posición, color, patrón y doblado EXACTOS de la geometría original de SketchUp. Si una servilleta es cuadrada en SketchUp, DEBE ser cuadrada en el render y su doblado DEBE ser el mismo; si un plato tiene un borde específico, DEBE replicarlo. NO 'MEJORES' CREATIVAMENTE SU GEOMETRÍA. Solo haz que se vean fotorrealistas con la fidelidad más alta posible a su forma base, SIN INFERIR NADA QUE NO ESTÉ EN EL SKETCHUP.**"
-  - **Protocolo Detallado de Traducción de Materiales (Basado en la Descripción de Elementos de la Escena y Referencias Visuales):**
-    - **Detalles del Contenido de la Escena:** Incorpora TODOS los detalles de la descripción de la escena a continuación. Esto incluye estilo general, colores dominantes, objetos específicos, sus recuentos, descripciones detalladas (ej. tipos y colores específicos de flores, estilos de sillas, tipos de tela, materiales de la vajilla, *con notas específicas sobre el grano de la madera, el tejido de la tela, los acabados metálicos*). La IA debe seguir estrictamente estas descripciones, **priorizando las referencias visuales si se proporcionan para cualquier elemento específico**.
-    - **Florales:** "Renderízalos como diseños florales hiper-realistas, recién arreglados, exuberantes y orgánicos. Incorpora TODOS los detalles de flores proporcionados por el usuario (tipos, colores, arreglos, estilos de jarrones) de la descripción de la escena. Concéntrate en detalles de pétalos individuales, naturalmente imperfectos, texturas variadas, volumen realista, variaciones orgánicas y translucidez de luz realista. Asegura que el color sea exactamente el especificado. **SI SE ESPECIFICAN ROSAS U OTRAS FLORES SOBRE UN ARREGLO, DEBEN ESTAR PRESENTES Y EN LA POSICIÓN EXACTA, REPLICANDO LA DISPOSICIÓN DEL SKETCHUP. Si se proporcionan referencias visuales para flores/jarrones, replícalas con precisión, incluyendo propiedades de material y forma.**"
-    - **Telas:** "Transforma superficies de colores planos en textiles lujosos de alta gama. Incorpora TODOS los detalles de tela proporcionados por el usuario de la descripción de la escena. Renderiza con **cualidades de renderizado físicamente basado (PBR) hiper-realistas**: exhibiendo pliegues de tela naturales, suaves y voluminosos y peso natural, brillo sutil y detalles intrincados del tejido (ej. seda fina, terciopelo pesado, lino nítido, brocado texturizado). Asegura que la luz interactúe de forma realista con la siesta y la textura de la tela, mostrando sutiles variaciones de color y brillo. **Si se proporcionan referencias visuales para telas, replícalas con precisión, incluyendo la caída y la textura.**"
-    - **Vajilla (Vasos, Cubiertos, Platos, Servilletas):** "Convierte formas geométricas en vajilla exquisita. Incorpora TODOS los detalles de vajilla y servilletas proporcionados por el usuario de la descripción de la escena. Esto incluye **cubiertos de metal dorado ALTAMENTE PULIDO, BRILLANTE Y ALTAMENTE REFLECTANTE (con un lustre vívido, un efecto espejo casi perfecto, un brillo casi especular que refleja el entorno con máxima fidelidad y sutiles iridiscencias), con micro-rasguños sutiles y distribución de peso realista)**; **platos de porcelana fina (esmaltes delicados, bordes nítidos, imperfecciones sutiles, micro-textura de superficie realista y cualquier patrón o detalle de borde especificado). LA VAJILLA Y SERVILLETAS DEBEN REPLICAR FIELMENTE LAS FORMAS, TAMAÑOS, PATRONES, COLORES Y DOBLADOS EXACTOS MOSTRADOS EN EL SKETCHUP O EN LAS REFERENCIAS. ABSOLUTAMENTE NINGUNA ALTERACIÓN, MODIFICACIÓN O 'MEJORAMIENTO' CREATIVO DE SU GEOMETRÍA O DISPOSICIÓN, incluso si el modelo de SketchUp es rudimentario; tu tarea es añadir fotorrealismo A SU GEOMETRÍA EXISTENTE Y EXACTA SIN INFERENCIAS**."; y **cristalería brillante e impecable (exhibiendo refracciones ópticas realistas, aberración cromática y alta transparencia, reflejando la luz ambiental con reflejos precisos pero SIN destellos de lente exagerados, deslumbramiento o floración de fuentes de luz internas)**. Cada pequeño detalle debe ser renderizado perfectamente. **Si se proporcionan referencias visuales para vajilla/servilletas, replícalas con precisión, incluyendo propiedades de material, patrones y formas.**"
-    - **Sillas:** "Aplica texturas fotorrealistas. Incorpora TODOS los detalles de sillas proporcionados por el usuario de la descripción de la escena. Ejemplos incluyen sillas Chivari doradas ricamente texturizadas con brillo metálico realista, reflejos precisos y desgaste sutil; sillas Crossback de madera rústicas con grano de madera visible y variado (ej. roble, caoba, pino envejecido), imperfecciones naturales y acabados de superficie realistas (ej. mate, satinado); o sillas Ghost de acrílico perfectamente claras con alta transparencia, interacción de luz realista (refracción y reflexión) y reflejos sutiles en los bordes. **Si se proporcionan referencias visuales para sillas, replícalas con precisión.**"
-  - **Guía de Atmósfera y Estilo:**
-    - **Inferencia General de Estilo y Material:** La descripción de la escena es CRÍTICA para especificar elecciones exactas de materiales, tipos y colores de flores específicos y elementos decorativos matizados, así como el estilo general del evento. La IA priorizará estos detalles textuales para la precisión del renderizado, *mientras se adhiere rigurosamente a la geometría original, las indicaciones de color y el diseño de la imagen de SketchUp*, **y dando importancia primordial a cualquier referencia visual proporcionada para elementos específicos**."
-    - **Entorno de Iluminación (Físicamente Preciso):** "${lightingDetails} ${advancedLightingCommand}"
-  - **Calidad:** "Genera una imagen con fotorrealismo inigualable y detalle sub-píxel, renderizada en resolución 8K. Utiliza interacción de luz físicamente precisa, profundidad de campo precisa (creando un efecto bokeh natural para los elementos de fondo) y enfoque nítido en el primer plano inmediato y los sujetos principales. Asegura una caída de luz natural y sombras realistas sin artefactos de lente artificiales (sin destellos, deslumbramiento o floración artificial a menos que sea un subproducto sutil y físicamente preciso de las condiciones de iluminación)."
-  - **Directiva de Salida:** "Output: Return ONLY the final rendered image."
+  INPUT:
+  1. Una imagen de SketchUp (que actúa como "Geometry Pass" o "Depth Map" inmutable).
+  2. Instrucciones de materiales (descripción).
+  3. Imágenes de referencia (SOLO para extraer texturas/materiales, IGNORAR su geometría).
 
-  **Descripción de Elementos de la Escena (ESTA ES LA FUENTE PRIMARIA E INALTERABLE DE TODOS LOS DETALLES DE CONTENIDO Y GEOMETRÍA PARA ESTA ESCENA):**
-  \`\`\`
+  REGLAS DE ORO (VIOLARLAS CAUSA FALLO DEL SISTEMA):
+  1. **CONGELAMIENTO DE CÁMARA:** La imagen de salida debe superponerse perfectamente píxel a píxel con la entrada. NO muevas la cámara, NO cambies el FOV, NO cambies el encuadre. La perspectiva es SAGRADA.
+  2. **CONGELAMIENTO DE GEOMETRÍA:** NO añadas objetos. NO quites objetos. NO arregles modelados "feos". Si el modelo de SketchUp es un cubo simple, renderiza un cubo fotorrealista, no lo transformes en una mesa compleja. Respeta las líneas rectas y la perspectiva cónica del dibujo original.
+  3. **INFERENCIA DE TEXTURAS:** Aplica materiales fotorrealistas sobre las superficies definidas por las líneas del dibujo.
+     - Si ves líneas de un piso -> Aplica textura de mármol/madera respetando la perspectiva.
+     - Si ves un cilindro -> Aplica textura de vidrio/metal/cera.
+  4. **PROHIBIDO ALUCINAR:** No inventes ventanas, puertas, o muebles que no estén dibujados explícitamente en el SketchUp.
+
+  ESTILO VISUAL: Fotografía de evento de alta gama, Award-Winning Photography, 8K resolution, Unreal Engine 5 render style.
+
+  INSTRUCCIONES DE ILUMINACIÓN:
+  ${lightingDetails} ${advancedLightingCommand}
+
+  DESCRIPCIÓN DE MATERIALES A APLICAR (Aplica esto a la geometría existente):
   ${sceneElementsDescription}
-  \`\`\`
-  ${hasReferenceImages ? "- Nota: También se proporcionan referencias visuales globales para elementos específicos junto a CADA imagen principal de SketchUp. Prioriza estas señales visuales para esos elementos en todas las generaciones." : ""}
 
-  Genera el prompt maestro completo y refinado ahora:`;
+  ${referenceImageInstruction}
+
+  Genera el prompt final optimizado para que el modelo de imagen ejecute este renderizado técnico sin desviarse un solo píxel de la estructura original.
+  `;
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
   try {
@@ -349,10 +339,14 @@ export const generateSingleRender = async (
     );
     console.log(`Final Prompt for the Scene:`, finalPrompt); // Log the final prompt for debugging
 
+    // Add technical prefix before sending to image generation
+    const technicalPrefix = "High fidelity image-to-image transformation. Keep input strict geometry. ";
+    const combinedPrompt = technicalPrefix + finalPrompt;
+
     onProgress(`Generando render para la escena...`);
     const imageUrl = await generateEventRender(
       sketchupImage,
-      finalPrompt,
+      combinedPrompt, // Usar el prompt combinado
       referenceImages
     );
     return { url: imageUrl, error: null };
