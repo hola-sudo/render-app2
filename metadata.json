@@ -1,0 +1,5 @@
+{
+  "name": "Event Render AI",
+  "description": "Transform 3D model screenshots into photorealistic event renders using AI. Upload a SketchUp image, describe your event, choose lighting, and get stunning visualizations for weddings, parties, and more.",
+  "requestFramePermissions": []
+}
