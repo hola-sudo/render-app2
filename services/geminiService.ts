@@ -40,6 +40,7 @@ const handleApiResponse = (response: GenerateContentResponse, prompt: string): s
 
 /**
  * Detects scene elements. 
+ * CAMBIO LIGERO: Pedir detalles de material (mate/brillante) para ayudar al realismo.
  */
 export const detectSceneElements = async (originalImages: File[]): Promise<string> => {
   if (originalImages.length === 0) return 'No images provided.';
@@ -48,16 +49,16 @@ export const detectSceneElements = async (originalImages: File[]): Promise<strin
   const imageParts = await Promise.all(originalImages.map(file => fileToPart(file)));
 
   const prompt = `
-  TASK: Analyze the geometry and materials of this SketchUp scene.
+  TASK: Analyze the geometry and materials of this SketchUp scene for a HIGH-END RENDER.
   OUTPUT FORMAT: Technical List.
   
   1. Identify the CAMERA ANGLE (e.g., Wide shot, Eye level).
   2. List the MATERIALS mapped to specific objects.
-     - Example: "Round tables -> White tablecloth."
-     - Example: "Backdrop -> Green foliage wall."
+     - Specify texture qualities if visible (e.g. "Shiny metal", "Rough wood", "Velvet fabric").
+     - Example: "Round tables -> White linen tablecloth (matte)."
   3. Identify EMPTY SPACES (e.g., "Right foreground is empty grass").
   
-  Note: Be literal. Do not invent objects.
+  Note: Be literal. Do not invent objects. Focus on material properties.
   `;
 
   try {
@@ -77,13 +78,13 @@ export const detectSceneElements = async (originalImages: File[]): Promise<strin
 
 /**
  * Refines prompt.
- * CAMBIO CRÍTICO: "Mode: Texture Overlay" para forzar geometría 1:1.
+ * CAMBIO: Inyectar palabras clave de "Ultra-Realismo" y "PBR" sin tocar la geometría.
  */
 export const refinePromptForGeneration = async (
   sceneElementsDescription: string,
   lightingType: LightingType,
   advancedLightingInstructions: string,
-  // Corrected types to match LightingConfig interface
+  // Corrected types to match LightingConfig interface from types.ts
   colorTemperature: 'warm' | 'neutral' | 'cool' | 'golden',
   exposureCompensation: 'standard' | 'brighter' | 'darker' | 'very_bright' | 'very_dark',
   contrastEnhancement: 'natural' | 'enhanced' | 'soft' | 'high_contrast' | 'low_contrast',
@@ -91,37 +92,41 @@ export const refinePromptForGeneration = async (
 ): Promise<string> => {
   
   let lightingDetails = '';
-  // Forzamos "Darkness" real en modo noche
   switch (lightingType) {
-    case LightingType.Day: lightingDetails = "Lighting: Natural daylight. Brightness: Normal."; break;
-    case LightingType.Sunset: lightingDetails = "Lighting: Golden hour. Warm tones."; break;
-    case LightingType.Night: lightingDetails = "Lighting: NIGHT MODE. Deep blue sky, dark environment. Light only from candles/lamps."; break;
+    case LightingType.Day: lightingDetails = "Lighting: Natural daylight. Brightness: Normal. Shadows: Soft and realistic."; break;
+    case LightingType.Sunset: lightingDetails = "Lighting: Golden hour. Warm tones. Long shadows."; break;
+    case LightingType.Night: lightingDetails = "Lighting: NIGHT MODE. Deep blue sky, dark environment. Light only from candles/lamps. Cinematic contrast."; break;
   }
 
   const referenceInstruction = hasReferenceImages
-    ? `REFERENCES: Use attached images for TEXTURE and MATERIAL definitions only. Do NOT copy the object shapes.`
+    ? `REFERENCES: Use attached images for TEXTURE and MATERIAL definitions (e.g. fabric weave, flower petals). Do NOT copy the object shapes.`
     : '';
 
-  // PROMPT DE INGENIERÍA INVERSA PARA MANTENER GEOMETRÍA
+  // PROMPT OPTIMIZADO PARA REALISMO DE TEXTURAS
   const refinementPrompt = `
-  ### SYSTEM INSTRUCTION: TEXTURE FILTER MODE ###
+  ### SYSTEM INSTRUCTION: HIGH-FIDELITY TEXTURE ENGINE ###
   
-  You are a Technical Rendering Engine transforming a SketchUp wireframe into a photorealistic image.
+  You are a Technical Rendering Engine. Your goal is to apply **Ultra-Photorealistic 8K Textures** to a strict geometry wireframe.
 
   ### CRITICAL OUTPUT PARAMETERS ###
-  1. **ASPECT RATIO:** 16:9 (Landscape). DO NOT PRODUCE A SQUARE IMAGE.
-  2. **COMPOSITION:** MATCH THE INPUT IMAGE EXACTLY. Do not zoom in. Do not zoom out. Do not crop.
-  3. **GEOMETRY:** Keep the scene layout identical. Do not add furniture to empty grass areas.
+  1. **ASPECT RATIO:** 16:9 (Landscape).
+  2. **GEOMETRY:** LOCKED. Match input exactly. No new objects.
+  3. **TEXTURE QUALITY (PRIORITY):** Apply PBR (Physically Based Rendering) materials.
+     - **Fabrics:** Show micro-details (weave, seams, natural folds).
+     - **Metals:** Realistic reflection, anisotropy, and gloss.
+     - **Glass:** Physically accurate refraction and caustics.
+     - **Vegetation:** Subsurface scattering on leaves/petals.
+     - **Overall:** Eliminate "cartoonish" or "plastic" looks. Look like a high-end architectural photograph.
 
   ### SCENE DATA ###
   **Lighting:** ${lightingDetails} ${advancedLightingInstructions}
-  **Atmosphere:** Color Temp: ${colorTemperature}, Contrast: ${contrastEnhancement}.
+  **Atmosphere:** Color Temp: ${colorTemperature}, Contrast: ${contrastEnhancement}. Style: Award-Winning Event Photography.
   **Materials to Render:**
   ${sceneElementsDescription}
 
   ${referenceInstruction}
 
-  Generate a precise image generation prompt that enforces a 16:9 aspect ratio and strict adherence to the input geometry.
+  Generate a precise image generation prompt that enforces a 16:9 aspect ratio, strict geometry, AND maximizes texture realism (8k, PBR).
   `;
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
@@ -138,7 +143,7 @@ export const refinePromptForGeneration = async (
 
 /**
  * Generate Event Render
- * CAMBIO CRÍTICO: Configuración de 'aspectRatio' añadida al objeto de configuración.
+ * Mantiene la configuración 16:9 intacta.
  */
 const generateEventRender = async (originalImage: File, finalPrompt: string, referenceImages: File[]): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
@@ -150,15 +155,13 @@ const generateEventRender = async (originalImage: File, finalPrompt: string, ref
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview', // Asegúrate que tu clave tenga acceso a este modelo o usa 'gemini-pro-vision' / 'imagen-3' según disponibilidad
+      model: 'gemini-3-pro-image-preview',
       contents: { parts },
       config: { 
         responseModalities: [Modality.IMAGE], 
         safetySettings,
-        // AQUÍ ESTÁ LA SOLUCIÓN TÉCNICA:
-        // Use generationConfig as per @google/genai guidelines
         generationConfig: {
-            aspectRatio: "16:9", // Forzar formato panorámico
+            aspectRatio: "16:9",
             responseMimeType: "image/jpeg"
         }
       },
@@ -172,7 +175,7 @@ const generateEventRender = async (originalImage: File, finalPrompt: string, ref
 
 /**
  * Main generation function.
- * CAMBIO: Prefijo técnico reforzado para evitar movimiento de cámara.
+ * CAMBIO: "Strict Lock" ahora incluye instrucciones de calidad 8K.
  */
 export const generateSingleRender = async (
   sketchupImage: File,
@@ -186,7 +189,7 @@ export const generateSingleRender = async (
   onProgress: (message: string) => void
 ): Promise<{ url: string | null; error: string | null }> => {
   
-  onProgress(`Configurando formato 16:9 y geometría...`);
+  onProgress(`Configurando texturas PBR y geometría...`);
 
   if (!sceneDescription.trim()) return { url: null, error: 'Falta descripción.' };
 
@@ -201,12 +204,12 @@ export const generateSingleRender = async (
       referenceImages.length > 0
     );
 
-    // Prompt final reforzado
-    const strictLock = " --aspect-ratio 16:9 [IMPORTANT: OUTPUT MUST BE 16:9 LANDSCAPE. NO SQUARE. NO CROPPING. KEEP EMPTY AREAS EMPTY.]";
+    // Prompt final reforzado con calidad 8K y realismo
+    const strictLock = " --aspect-ratio 16:9 [IMPORTANT: OUTPUT MUST BE 16:9 LANDSCAPE. NO SQUARE. NO CROPPING. KEEP EMPTY AREAS EMPTY. RENDER WITH 8K PHOTOREALISTIC TEXTURES AND PBR MATERIALS.]";
     const combinedPrompt = finalPrompt + strictLock;
 
     console.log("Prompt enviado:", combinedPrompt);
-    onProgress(`Renderizando escena en 16:9...`);
+    onProgress(`Renderizando escena en 16:9 con alta fidelidad...`);
     
     const imageUrl = await generateEventRender(sketchupImage, combinedPrompt, referenceImages);
     return { url: imageUrl, error: null };
